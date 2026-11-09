@@ -1,0 +1,20 @@
+# A real ROS 2 (Jazzy) robot environment from RoboStack.
+#
+# Channels: the conda.anaconda.org mirrors are what the committed lockfile was
+# solved against. RoboStack's own docs currently point at
+# https://prefix.dev/robostack-jazzy; swap the channel and run `pixi lock` if you prefer that.
+[workspace]
+name = "robot-ros2"
+channels = [
+  "https://conda.anaconda.org/robostack-jazzy",
+  "https://conda.anaconda.org/conda-forge",
+]
+platforms = ["linux-64"]
+
+[dependencies]
+ros-jazzy-ros-base = "*"
+ros-jazzy-demo-nodes-cpp = "*"
+
+[tasks]
+healthcheck = "python healthcheck.py"
+start = "ros2 run demo_nodes_cpp talker"

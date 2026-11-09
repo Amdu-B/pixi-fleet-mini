@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>pixi-fleet-mini</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --text: #1b1f24; --muted: #667085; --line: #e4e7ec;
+    --ok: #12805c; --ok-bg: #e3f6ee; --warn: #9a6700; --warn-bg: #fff3d6;
+    --bad: #b42318; --bad-bg: #fde8e6; --idle: #475467; --idle-bg: #eef0f3; --accent: #2f5bea;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #12151a; --card: #1b2027; --text: #e8eaed; --muted: #98a2b3; --line: #2b323c;
+      --ok: #5fd3a5; --ok-bg: #12352a; --warn: #f1c056; --warn-bg: #3a2f10;
+      --bad: #ff8a80; --bad-bg: #3d1a17; --idle: #b6bfcc; --idle-bg: #262c35; --accent: #7a9bff;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 980px; margin: 0 auto; padding: 20px 16px 48px; }
+  header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 16px; }
+  h1 { font-size: 20px; margin: 0; letter-spacing: -0.01em; }
+  h2 { font-size: 13px; margin: 0 0 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 600; }
+  .conn { font-size: 13px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--bad); }
+  .dot.on { background: var(--ok); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; margin-bottom: 16px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+  .big { font-size: 22px; font-weight: 650; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 13px; }
+  mono, code, .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12.5px; }
+  form { display: flex; gap: 8px; flex-wrap: wrap; align-items: end; }
+  label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); flex: 1 1 160px; }
+  select, button { font: inherit; padding: 8px 10px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); }
+  button { background: var(--accent); color: #fff; border-color: transparent; cursor: pointer; font-weight: 600; }
+  button:disabled { opacity: .5; cursor: default; }
+  .msg { margin-top: 8px; font-size: 13px; min-height: 18px; }
+  .msg.err { color: var(--bad); }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 600; padding: 0 8px 8px 0; }
+  td { padding: 10px 8px 10px 0; border-top: 1px solid var(--line); vertical-align: top; }
+  tr.offline td { opacity: .5; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600; margin-right: 4px; white-space: nowrap; }
+  .healthy { color: var(--ok); background: var(--ok-bg); }
+  .updating { color: var(--warn); background: var(--warn-bg); }
+  .failed, .rolledback { color: var(--bad); background: var(--bad-bg); }
+  .unknown, .busy, .offlinebadge { color: var(--idle); background: var(--idle-bg); }
+  .scroll { overflow-x: auto; }
+  ul.events { list-style: none; margin: 0; padding: 0; max-height: 280px; overflow: auto; }
+  ul.events li { padding: 6px 0; border-top: 1px solid var(--line); display: flex; gap: 10px; font-size: 13px; }
+  ul.events li:first-child { border-top: 0; }
+  .t { color: var(--muted); flex: none; }
+  .lvl-error { color: var(--bad); }
+  .lvl-warn { color: var(--warn); }
+  .empty { color: var(--muted); font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>pixi-fleet-mini</h1>
+    <div class="conn"><span class="dot" id="dot"></span><span id="conn">connecting…</span></div>
+  </header>
+
+  <div class="grid">
+    <section class="card">
+      <h2>Desired release</h2>
+      <div class="big" id="desired-name">–</div>
+      <div class="sub" id="desired-sub"></div>
+      <div class="sub" id="converged" style="margin-top:8px"></div>
+    </section>
+
+    <section class="card">
+      <h2>Roll out</h2>
+      <form id="rollout">
+        <label>Release
+          <select id="release"></select>
+        </label>
+        <label>Canary (goes first)
+          <select id="canary"></select>
+        </label>
+        <button id="go" type="submit">Roll out</button>
+      </form>
+      <div class="msg" id="msg"></div>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Robots</h2>
+    <div class="scroll">
+      <table>
+        <thead><tr><th>Robot</th><th>Release</th><th>State</th><th>Detail</th></tr></thead>
+        <tbody id="robots"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Events on this node <span class="sub" id="node-name"></span></h2>
+    <ul class="events" id="events"></ul>
+  </section>
+</main>
+
+<script>
+(function () {
+  "use strict";
+  const $ = (s) => document.querySelector(s);
+
+  // Everything below builds DOM nodes with textContent. Robot ids, labels and
+  // error messages come from other machines, so they are never parsed as HTML.
+  function el(tag, cls, text) {
+    const e = document.createElement(tag);
+    if (cls) e.className = cls;
+    if (text !== undefined) e.textContent = text;
+    return e;
+  }
+  const short = (h) => (h ? h.slice(0, 8) : "–");
+
+  let labels = {};
+  let optionsKey = "";
+
+  function relName(hash) {
+    if (!hash) return "–";
+    return labels[hash] ? labels[hash] + " · " + short(hash) : short(hash);
+  }
+
+  function fillSelect(sel, items, keep) {
+    const prev = keep ? sel.value : "";
+    sel.replaceChildren();
+    for (const [value, text] of items) {
+      const o = el("option", null, text);
+      o.value = value;
+      sel.append(o);
+    }
+    if (prev && items.some(([v]) => v === prev)) sel.value = prev;
+  }
+
+  function render(f, events) {
+    labels = {};
+    for (const b of f.bundles) if (b.label) labels[b.hash] = b.label;
+
+    // desired
+    const d = f.desired;
+    $("#desired-name").textContent = d.release_hash ? relName(d.release_hash) : "nothing yet";
+    $("#desired-sub").textContent = d.release_hash
+      ? "set by " + (d.set_by || "?") + " · change #" + d.counter + (d.canary ? " · canary " + d.canary : "")
+      : "pick a release below to start a rollout";
+    const online = f.robots.filter((r) => r.online && !r.operator);
+    const done = online.filter((r) => r.current_release === d.release_hash).length;
+    $("#converged").textContent = d.release_hash ? done + " of " + online.length + " online robots on this release" : "";
+
+    // rollout form (only rebuilt when the choices change, so a selection survives refreshes)
+    const key = JSON.stringify([f.bundles.map((b) => b.hash), f.robots.map((r) => r.robot_id)]);
+    if (key !== optionsKey) {
+      optionsKey = key;
+      fillSelect($("#release"), f.bundles.map((b) => [b.hash, (b.label || "release") + " · " + short(b.hash)]), true);
+      fillSelect($("#canary"), [["", "none (everyone at once)"]].concat(f.robots.filter((r) => !r.operator).map((r) => [r.robot_id, r.robot_id])), true);
+    }
+    $("#go").disabled = f.bundles.length === 0;
+
+    // robots
+    const body = $("#robots");
+    body.replaceChildren();
+    if (f.robots.length === 0) {
+      const tr = el("tr"); const td = el("td", "empty", "no robots yet"); td.colSpan = 4; tr.append(td); body.append(tr);
+    }
+    for (const r of f.robots) {
+      const tr = el("tr", r.online ? "" : "offline");
+      const c1 = el("td"); c1.append(el("strong", null, r.robot_id));
+      if (r.robot_id === f.self_id) c1.append(el("span", "sub", "  (this node)"));
+      c1.append(el("div", "sub mono", r.addr));
+      const c2 = el("td"); c2.append(el("span", "mono", relName(r.current_release)));
+      const c3 = el("td");
+      if (r.operator) c3.append(el("span", "badge unknown", "operator"));
+      else c3.append(el("span", "badge " + r.health, r.health));
+      if (r.last_failed && r.last_failed !== r.current_release) c3.append(el("span", "badge rolledback", "rejected " + short(r.last_failed)));
+      if (r.busy) c3.append(el("span", "badge busy", "busy"));
+      if (!r.online) c3.append(el("span", "badge offlinebadge", "offline " + r.age_secs + "s"));
+      const c4 = el("td", "sub", r.detail);
+      tr.append(c1, c2, c3, c4);
+      body.append(tr);
+    }
+
+    // events
+    $("#node-name").textContent = "– " + f.self_id;
+    const ul = $("#events");
+    ul.replaceChildren();
+    if (events.length === 0) ul.append(el("li", "empty", "nothing yet"));
+    for (const e of events.slice().reverse().slice(0, 60)) {
+      const li = el("li");
+      li.append(el("span", "t mono", new Date(e.ts * 1000).toLocaleTimeString()));
+      li.append(el("span", "lvl-" + e.level, e.message));
+      ul.append(li);
+    }
+  }
+
+  function setConn(ok, text) {
+    $("#dot").className = "dot" + (ok ? " on" : "");
+    $("#conn").textContent = text;
+  }
+
+  async function refresh() {
+    try {
+      const [f, ev] = await Promise.all([
+        fetch("/api/fleet").then((r) => r.json()),
+        fetch("/events").then((r) => r.json()),
+      ]);
+      render(f, ev);
+      setConn(true, "connected to " + f.self_id);
+    } catch (e) {
+      setConn(false, "cannot reach the agent");
+    }
+  }
+
+  $("#rollout").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const msg = $("#msg");
+    msg.className = "msg";
+    msg.textContent = "";
+    const body = { release_hash: $("#release").value, canary: $("#canary").value || null };
+    try {
+      const r = await fetch("/desired", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+      if (!r.ok) throw new Error(await r.text());
+      msg.textContent = "Rollout started.";
+      refresh();
+    } catch (e) {
+      msg.className = "msg err";
+      msg.textContent = String(e.message || e);
+    }
+  });
+
+  refresh();
+  setInterval(refresh, 1500);
+})();
+</script>
+</body>
+</html>

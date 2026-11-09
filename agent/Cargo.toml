@@ -1,0 +1,27 @@
+[package]
+name = "agent"
+version = "0.1.0"
+edition = "2021"
+description = "pixi-fleet-mini: a small peer-to-peer fleet agent that keeps Pixi environments in sync across robots"
+license = "MIT"
+
+[dependencies]
+anyhow = "1"
+axum = "0.8"
+clap = { version = "4", features = ["derive"] }
+hex = "0.4"
+libc = "0.2"
+reqwest = { version = "0.12", default-features = false, features = ["json"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.10"
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+
+[dev-dependencies]
+tempfile = "3"
+
+[profile.release]
+lto = "thin"
+strip = true

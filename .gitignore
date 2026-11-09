@@ -1,0 +1,6 @@
+/agent/target/
+/demo-data/
+/demo-data-ros2/
+.pixi/
+data/
+*.log

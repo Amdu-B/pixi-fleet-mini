@@ -1,0 +1,59 @@
+# One operator node and three robots on a private network.
+# Robots only know the operator; they find each other through gossip.
+#
+#   docker compose up --build
+#   open http://localhost:8000          (operator UI; robots: 8001, 8002, 8003)
+#
+#   docker compose exec operator agent rollout /releases/v1-good --to http://localhost:8000
+#
+# Failure demo: docker compose exec operator agent rollout /releases/v3-broken \
+#                 --to http://localhost:8000 --canary robot1
+#
+# Not tested in the environment this was written in (no Docker daemon there);
+# scripts/demo-local.sh runs the same story without Docker and was tested.
+
+x-robot: &robot
+  build:
+    context: .
+    dockerfile: docker/Dockerfile
+  restart: unless-stopped
+
+services:
+  operator:
+    <<: *robot
+    command: ["run", "--id", "operator", "--operator", "--listen", "0.0.0.0:8000",
+              "--advertise", "http://operator:8000", "--data-dir", "/data"]
+    ports: ["8000:8000"]
+    volumes:
+      - operator-data:/data
+      - ./sample-robot-app/releases:/releases:ro
+
+  robot1:
+    <<: *robot
+    command: ["run", "--id", "robot1", "--listen", "0.0.0.0:8000",
+              "--advertise", "http://robot1:8000", "--peer", "http://operator:8000", "--data-dir", "/data"]
+    ports: ["8001:8000"]
+    volumes: ["robot1-data:/data"]
+    depends_on: [operator]
+
+  robot2:
+    <<: *robot
+    command: ["run", "--id", "robot2", "--listen", "0.0.0.0:8000",
+              "--advertise", "http://robot2:8000", "--peer", "http://operator:8000", "--data-dir", "/data"]
+    ports: ["8002:8000"]
+    volumes: ["robot2-data:/data"]
+    depends_on: [operator]
+
+  robot3:
+    <<: *robot
+    command: ["run", "--id", "robot3", "--listen", "0.0.0.0:8000",
+              "--advertise", "http://robot3:8000", "--peer", "http://operator:8000", "--data-dir", "/data"]
+    ports: ["8003:8000"]
+    volumes: ["robot3-data:/data"]
+    depends_on: [operator]
+
+volumes:
+  operator-data:
+  robot1-data:
+  robot2-data:
+  robot3-data:
