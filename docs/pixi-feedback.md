@@ -2,8 +2,6 @@
 
 These are observations from building this project, written down so they can feed the "how I used Pixi, and what I would improve" section of an application. They are *my observations from one build*, not a survey.
 
-> **TODO before using this anywhere:** add your own notes below from your own use of Pixi. Only keep points you can explain in your own words.
-
 ## What worked well
 
 * **`--locked` is the right primitive for a fleet.** `pixi install --locked` fails if the lockfile does not match the manifest, which is exactly the guarantee a deploy agent wants: no solving on the robot, every robot gets the same packages.
@@ -24,6 +22,3 @@ These are observations from building this project, written down so they can feed
 * A `pixi` subcommand that reports "is this directory's environment installed and consistent with the lockfile?" in machine-readable form, for agents.
 * Atomic environment switching as a library feature: the agent does it with directories and a symlink; Pixi knows more about what is safe to share between releases (hard-linked package caches).
 
-## My own notes
-
-(Add yours here.)
