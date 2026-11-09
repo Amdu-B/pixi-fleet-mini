@@ -2,7 +2,7 @@
 
 A small, working prototype of **fleet management for robots built on [Pixi](https://pixi.sh)**.
 
-You describe what the fleet should run (a Pixi environment, pinned by a lockfile). A Rust agent on every robot makes that true: it fetches the release from a neighbour, installs it, health-checks it, and only then switches to it atomically. If the health check fails, the robot never leaves its working release. Robots share state peer to peer, so a rollout keeps spreading even when the operator is gone.
+I describe what the fleet should run (a Pixi environment, pinned by a lockfile). A Rust agent on every robot makes that true: it fetches the release from a neighbour, installs it, health-checks it, and only then switches to it atomically. If the health check fails, the robot never leaves its working release. Robots share state peer to peer, so a rollout keeps spreading even when the operator is gone.
 
 ```
 operator ──publish/desire──▶ robot1 ◀──gossip──▶ robot2 ◀──gossip──▶ robot3
