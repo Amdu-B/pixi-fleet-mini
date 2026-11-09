@@ -4,6 +4,8 @@ A small, working prototype of **fleet management for robots built on [Pixi](http
 
 I describe what the fleet should run (a Pixi environment, pinned by a lockfile). A Rust agent on every robot makes that true: it fetches the release from a neighbour, installs it, health-checks it, and only then switches to it atomically. If the health check fails, the robot never leaves its working release. Robots share state peer to peer, so a rollout keeps spreading even when the operator is gone.
 
+> **How this was made:** I built this prototype with an AI assistant (Claude). I am going through the code now and plan to run it myself and extend it, starting with a lockfile check in `agent publish`.
+
 ```
 operator ──publish/desire──▶ robot1 ◀──gossip──▶ robot2 ◀──gossip──▶ robot3
                                │                    │                   │
@@ -31,7 +33,7 @@ This is a learning and portfolio project, not a product. [What it does not do](#
 You need [Pixi](https://pixi.sh) and Rust (`rustup`). The first run downloads Python from conda-forge.
 
 ```bash
-git clone <this repo> && cd pixi-fleet-mini
+git clone https://github.com/Amdu-B/pixi-fleet-mini.git && cd pixi-fleet-mini
 ./scripts/demo-local.sh
 ```
 
